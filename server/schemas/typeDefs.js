@@ -1,6 +1,7 @@
 // import the gql tagged template function
 const { gql } = require('apollo-server-express');
 
+
 // create our typeDefs
 const typeDefs = gql`
 
@@ -29,7 +30,13 @@ const typeDefs = gql`
         friends: [User]
     }
 
+    type Auth {
+        token: ID!
+        user: User
+    }
+
     type Query {
+        me: User
         users: [User]
         #  the exclamation point ! after the query parameter data type definitions 
         # indicates that for that query to be carried out, that data must exist. 
@@ -38,6 +45,17 @@ const typeDefs = gql`
         user(username: String!): User
         thoughts(username: String): [Thought]
         thought(_id: ID!): Thought
+    }
+
+    type Mutation {
+        login(email: String!, password: String!): Auth
+        addUser(username: String!, email: String!, password: String!): Auth
+        addThought(thoughtText: String!): Thought
+        # Note that addReaction() will return the parent Thought instead of the 
+        # newly created Reaction. This is because the front end will ultimately 
+        # track changes on the thought level, not the reaction level.
+        addReaction(thoughtId: ID!, reactionBody: String!): Thought
+        addFriend(friendId: ID!): User
     }
 `;
 
