@@ -1,12 +1,15 @@
 import React from 'react';
 import ThoughtList from '../components/ThoughtList';
-import { useQuery } from '@apollo/client';
-import { QUERY_USER, QUERY_ME } from '../utils/queries';
+import { useQuery, useMutation } from '@apollo/client';
+import { QUERY_THOUGHTS, QUERY_USER, QUERY_ME } from '../utils/queries';
 import FriendList from '../components/FriendList';
 import Auth from '../utils/auth';
 import { Navigate, useParams } from 'react-router-dom';
+import { ADD_FRIEND } from '../utils/mutations';
+import ThoughtForm from '../components/ThoughtForm';
 
 const Profile = () => {
+  const [addFriend] = useMutation(ADD_FRIEND);
   const { username: userParam } = useParams();
 
   const { loading, data } = useQuery(userParam ? QUERY_USER : QUERY_ME, {
@@ -38,14 +41,47 @@ const Profile = () => {
       </h4>
     );
   }
+
+  const handleClick = async () => {
+    try {
+      await addFriend({
+        variables: { id: user._id }
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
   return (
     <div>
       <div className="flex-row mb-3">
         <h2 className="bg-dark text-secondary p-3 display-inline-block">
           Viewing {userParam ? `${user.username}'s` : 'your'} profile.
         </h2>
-      </div>
 
+        {userParam && (
+          <button className="btn ml-auto" onClick={handleClick}>
+            Add Friend
+          </button>
+        )}
+      </div>
+      {/* Now navigate to the logged-in user's profile by clicking the Me link. 
+      Test the thought form on this page. Unfortunately, the cache doesn't seem 
+      to update here, and you're forced to reload the page to see the new thought.
+      Why does it matter which page you're on if Profile and Home both use the 
+      same ThoughtForm component?
+
+      There are actually two things happening here:
+
+      The Profile page relies on QUERY_ME (not QUERY_THOUGHTS) to populate the 
+      thoughts, so updating the cache of the latter doesn't help.
+
+      If you visit the /profile route without first visiting the homepage, 
+      QUERY_THOUGHTS will have never been cached, resulting in an error when you 
+      try to read and update it.
+
+      To fix this issue, we'll first wrap the QUERY_THOUGHTS cache update in a 
+      try...catch statement to prevent the error from blocking the next step. 
+      That next step will be to update the thoughts array on the QUERY_ME cache. */}
       <div className="flex-row justify-space-between mb-3">
         <div className="col-12 mb-3 col-lg-8">
           <ThoughtList thoughts={user.thoughts} title={`${user.username}'s thoughts...`} />
@@ -59,6 +95,7 @@ const Profile = () => {
           />
         </div>
       </div>
+      <div className="mb-3">{!userParam && <ThoughtForm />}</div>
     </div>
   );
 };
